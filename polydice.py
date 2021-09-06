@@ -10,15 +10,13 @@ Created on Tue Aug 24 16:05:25 2021
     #a function to combine the dice and make a single custom die/polynomial?
     #how to smoothly make 2d20kh1 into a polynomial?
 #comparing two dice pools
-#graph of possible results
-#die roller
 #negative dice
     #numpy does not tolerate negative powers in polynomials
     #check out sympy?
 
 
 from numpy.polynomial import Polynomial
-from random import randint, randrange
+from random import randrange
 import matplotlib.pyplot as plt
 
 #interpreter
@@ -101,6 +99,7 @@ def odds(diceList, target):
         
     return (successes/results)
 
+
 #prints the information from odds()
 def printOdds(diceList, target):
     value = int(odds(diceList, target) * 100)
@@ -115,15 +114,15 @@ def printOdds(diceList, target):
 There is a {}% chance of rolling equal to or higher than {}""".format(dice, value, target))
     oddsPlot(diceList, target)
     
+    
 def oddsPlot(diceList, target):
-
     pool = getPool(diceList)
+    total = 0
     
     x = []
     y = []
     
-    count = 1
-    total = 0
+    count = 1    
     while count < len(pool):
         total += pool.coef[count]
         x.append(count)
@@ -136,10 +135,10 @@ def oddsPlot(diceList, target):
     ax.bar(x, y)
     
     plt.show()   
-   
-#gives the expectation of the dice pool
-def expect(diceList):
+
     
+#gives the expectation of the dice pool
+def expect(diceList):   
     pool = getPool(diceList)    
     
     results = 0
@@ -152,7 +151,8 @@ def expect(diceList):
         count += 1
     
     return score/results      
-   
+
+    
 #simulates rolling the offered dice pool
 #test by checking arverge result to expectation for 1d6?    
 def roll(diceList):
@@ -173,6 +173,7 @@ def roll(diceList):
      
     return possibles[randrange(len(possibles))]
 
+
 #compares the average of several rolls to the expected result for the dice
 #find out how to do a sigma test to determine scientific accuracy?
 def rolltest(diceList, tests):
@@ -184,6 +185,7 @@ def rolltest(diceList, tests):
         count += 1
     
     return total/tests - expect(diceList)    
+
 
 #takes a dice and returns a bar graph of the odds for each result
 def barGraph(diceList):
