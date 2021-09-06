@@ -19,6 +19,7 @@ Created on Tue Aug 24 16:05:25 2021
 
 from numpy.polynomial import Polynomial
 from random import randint, randrange
+import matplotlib.pyplot as plt
 
 #interpreter
 #accepts a list of dice in the form xdy or [i, j, k]
@@ -112,7 +113,29 @@ def printOdds(diceList, target):
             dice += " + {}".format(str(die)) 
     print("""Dice pool: {}
 There is a {}% chance of rolling equal to or higher than {}""".format(dice, value, target))
- 
+    oddsPlot(diceList, target)
+    
+def oddsPlot(diceList, target):
+
+    pool = getPool(diceList)
+    
+    x = []
+    y = []
+    
+    count = 1
+    total = 0
+    while count < len(pool):
+        total += pool.coef[count]
+        x.append(count)
+        y.append(total)
+        count += 1
+    
+    fig = plt.figure()    
+    ax = fig.add_axes([0,0,1,1])
+    ax.axvline(target, color="red")
+    ax.bar(x, y)
+    
+    plt.show()   
    
 #gives the expectation of the dice pool
 def expect(diceList):
@@ -128,8 +151,7 @@ def expect(diceList):
         score += pool.coef[count] * (count)
         count += 1
     
-    return score/results    
-   
+    return score/results      
    
 #simulates rolling the offered dice pool
 #test by checking arverge result to expectation for 1d6?    
@@ -157,10 +179,27 @@ def rolltest(diceList, tests):
     total = 0
     
     count  = 0
-    while count< tests:
+    while count < tests:
         total += roll(diceList)
         count += 1
     
     return total/tests - expect(diceList)    
+
+#takes a dice and returns a bar graph of the odds for each result
+def barGraph(diceList):
+    pool = getPool(diceList)
     
+    x = []
+    y = []
     
+    count = 1
+    while count < len(pool):
+        x.append(count)
+        y.append(pool.coef[count])
+        count += 1
+    
+    fig = plt.figure()
+    ax = fig.add_axes([0,0,1,1])    
+
+    ax.bar(x, y)
+    plt.show()
