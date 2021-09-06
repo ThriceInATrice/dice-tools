@@ -18,6 +18,7 @@ Created on Tue Aug 24 16:05:25 2021
 from numpy.polynomial import Polynomial
 from random import randrange
 import matplotlib.pyplot as plt
+from math import floor
 
 #interpreter
 #accepts a list of dice in the form xdy or [i, j, k]
@@ -66,8 +67,7 @@ def interp(diceList):
                 for poly in interp(pool):                  
                     polynomials.append(poly)
                                
-    return polynomials
-                
+    return polynomials                
 
 
 #multiplies polynomials from a list
@@ -95,9 +95,49 @@ def odds(diceList, target):
             if count >= target:
                 successes += pool.coef[count]    
             count += 1
-    #make a clause that can compare two dice pools, give odds on which is higher?
         
     return (successes/results)
+
+
+#takes two dice lists, returns % chance that one will be higher than the other
+def comparePools(diceList1, diceList2):
+    pool1 = getPool(diceList1)
+    pool2 = getPool(diceList2)
+      
+    score1 = 0
+    score2 = 0    
+    total = 0
+       
+    for i in range(1, len(pool1)):   
+    
+        for j in range(1, len(pool2)):  
+              total += pool1.coef[i] + pool2.coef[j]
+              
+              # print ("{}: {}, {}: {}".format(diceList1, i, diceList2, j))
+              
+              if i > j:
+                  score1 += pool1.coef[i] + pool2.coef[j]                                                    
+                  # print(""""{} is higher, add {}""".format(diceList1,  pool1.coef[i] + pool2.coef[j]))
+              elif j > i:
+                  score2 += pool1.coef[i] + pool2.coef[j]
+                  # print("{} is higher, add {}".format(diceList2, pool1.coef[i] + pool2.coef[j]))           
+            
+    chance1 = floor(score1/total * 100)
+    chance2 = floor(score2/total * 100)
+    chanceDraw = floor((1 - (score1 + score2)/total) * 100)
+
+    print (text.format(diceList1, 
+                       chance1, 
+                       diceList2, 
+                       chance2, 
+                       chanceDraw))
+    
+    
+#text for comparePools()
+text = """Odds:
+{} will be higher {}% of the time
+{} will be higher {}% of the time 
+They will be equal {}%of the time"""    
 
 
 #prints the information from odds()
@@ -135,6 +175,35 @@ def oddsPlot(diceList, target):
     ax.bar(x, y)
     
     plt.show()   
+
+#accepts a dice list and target number
+#ought to output a graph of x vs chance to score at least x, and a line to mark the target
+#doesnt work - I think total is getting much to high
+def oddsPlot2(diceList, target):
+    pool = getPool(diceList)
+    total = 0
+    values = []
+    percents = []
+    
+    for i in range(0, len(pool)):
+        values.append(0)
+        
+        for j in range(0, len(pool)):
+            total += pool.coef[j]
+            if j >= i: 
+                values[i] += j
+    
+    del values[0] 
+    
+    for i in values:        
+        percents.append(floor(i/total * 100))
+    
+    fig = plt.figure()    
+    ax = fig.add_axes([0,0,1,1])
+    ax.axvline(target, color="red")
+    ax.bar(range(1, len(pool)), percents)
+    
+    plt.show()  
 
     
 #gives the expectation of the dice pool
