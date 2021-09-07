@@ -10,9 +10,17 @@ Created on Tue Aug 24 16:05:25 2021
     #a function to combine the dice and make a single custom die/polynomial?
     #how to smoothly make 2d20kh1 into a polynomial?
 #comparing two dice pools
-#negative dice
+#negative values on die faces
     #numpy does not tolerate negative powers in polynomials
     #check out sympy?
+#interpreter
+    #functionality for modifiers to dice
+        #currently accepts modifiers for single dice only
+        #ignores modfiers on multiple dice eg 3d6-1
+#graphing
+    #plot two dice pools on one chart
+    #mark the expected value of a dice pool on the plot
+    
 
 
 from numpy.polynomial import Polynomial
@@ -24,16 +32,17 @@ from math import floor
 #accepts a list of dice in the form xdy or [i, j, k]
 #outputs a list of polynomials for the incut dice
 #does not accept negatives
+
 def interp(diceList):   
     polynomials = []
     dieCount = 0
     
-    for die in diceList:        
+    for value in diceList:        
         #this takes a list of faces and builds a polynomial for that die
-        if type(die) == list:
+        if type(value) == list:
             diePoly = 0
            
-            for face in die:
+            for face in value:
                 if type(face) != int:
                     print ("die value error")                              
                 
@@ -43,32 +52,93 @@ def interp(diceList):
             polynomials.append(diePoly)                                        
             
         else:
-            data = die.split("d")
-            dieCount += int(data[0])
+            dice = value.split(",")
+            # print("dice: {}".format(dice))
+            modifier = 1
             
-            if int(data[0]) == 1:                                            
-                poly = 0
+            for i in dice:
+                die = []
+                # print("i in dice: {}".format(i))
                 
-                count = int(data[1])
-                while count > 0:
-                    poly += Polynomial.basis(count)
-                    count -= 1
+                if "+" in i: 
+                    die = i.split("+")
+                    print("positive modifer, die = {}".format(die))
                 
-                polynomials.append(poly)
+                elif "-" in i:
+                    die = i.split("-")
+                    modifier = -1
+                    print("negative modifer, die = {}".format(die))
+                
+                else:
+                    die.append(i)
+                    die.append(0)
+                    print("no modifer, die = {}".format(die))
+                
+                print("die: {}".format(die))
             
-            elif int(data[0])>1:
-                pool = []
+                data = die[0].split("d")
+                print("data: {}".format(data))
                 
-                count = int(data[0])                                
-                while count > 0:
-                    pool.append("1d{}".format(data[1]))
-                    count -= 1
-
-                for poly in interp(pool):                  
+                data[0] = int(data[0])
+                dieCount += data[0]
+                
+                if data[0] == 1:                                            
+                    poly = 0
+                                     
+                    count = int(data[1])
+                    while count > 0:
+                        poly += Polynomial.basis(count)
+                        count -= 1
+                    
+                    # print("poly: {}".format(poly))
+                    # print("die[1]: {}".format(die[1]))
+                    # print("modifier: {}".format(modifier))
+                    
+                    poly = applyModifier(poly, int(die[1]) * modifier)
+                                                     
+                    polynomials.append(poly)
+                
+                elif data[0] > 1:
+                    pool = []
+                    
+                    count = int(data[0])                               
+                    while count > 0:                                                
+                        pool.append("1d{}".format(data[1]))
+                        count -= 1
+                    
+                    print("pool: {}".format(pool))
+                    pool = getPool(pool)
+                    print("getPool: {}".format(pool))
+                    poly = applyModifier(pool, int(die[1]) * modifier)
+                                    
                     polynomials.append(poly)
                                
     return polynomials                
 
+#accepts a polynomial and a modifier
+#returns the result of the polynomial, plus or minus the modifier
+#results cannot go below 0
+def applyModifier(poly, mod):
+    print("poly: {}, modifier: {}".format(poly, mod))
+    
+    if mod > 0:
+        poly *= Polynomial.basis(mod)    
+   
+    elif mod < 0:
+        result = 0
+        for i in range(0, len(poly)):
+            if i <= abs(mod):
+                result += poly.coef[i]
+            else:
+                result += Polynomial.basis(i + mod) * poly.coef[i]
+        poly = result    
+   
+    return(poly)
+   
+    
+   
+
+    
 
 #multiplies polynomials from a list
 #returns a single polynomial, representing their combined possible rolls
@@ -213,11 +283,10 @@ def expect(diceList):
     results = 0
     score = 0
     
-    count = 1
-    while count < len(pool):
-        results += pool.coef[count]
-        score += pool.coef[count] * (count)
-        count += 1
+    for i in range (0, len(pool)):
+        results += pool.coef[i]
+        score += pool.coef[i] * i
+        
     
     return score/results      
 
