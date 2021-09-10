@@ -6,40 +6,42 @@ Created on Tue Aug 24 16:05:25 2021
 """
 
 #TO DO
-#advantage?
-    #a function to combine the dice and make a single custom die/polynomial?
+#advantage
     #how to smoothly make 2d20kh1 into a polynomial?
+    #bring advantage into the interp
+    #figure out how to have +z at different levels eg 
+    #(2d6+1)(1d20)kh1+5 should return the highest result between 2d6+1 and 1d20, increased by 5
 #comparing two dice pools
 #negative values on die faces
     #numpy does not tolerate negative powers in polynomials
     #check out sympy?
-#interpreter
-    #functionality for modifiers to dice
-        #currently accepts modifiers for single dice only
-        #ignores modfiers on multiple dice eg 3d6-1
 #graphing
     #plot two dice pools on one chart
     #mark the expected value of a dice pool on the plot
-    
+#subtract one dice pool from annother
+#something is wrong with how oddsPlot is plotting odds
+    #check out the graphing elements
 
-
+import numpy
 from numpy.polynomial import Polynomial
+import numpy as np
 from random import randrange
 import matplotlib.pyplot as plt
 from math import floor
 
 #interpreter
 #accepts a list of dice in the form xdy or [i, j, k]
-#outputs a list of polynomials for the incut dice
-#does not accept negatives
+#outputs a list of polynomials for the input dice
 
 def interp(diceList):   
     polynomials = []
     dieCount = 0
     
     for value in diceList:        
+        if type(value) == numpy.polynomial.polynomial.Polynomial:
+            polynomials.append(value)
         #this takes a list of faces and builds a polynomial for that die
-        if type(value) == list:
+        elif type(value) == list:
             diePoly = 0
            
             for face in value:
@@ -51,7 +53,7 @@ def interp(diceList):
             
             polynomials.append(diePoly)                                        
             
-        else:
+        elif type(value) == str:
             dice = value.split(",")
             # print("dice: {}".format(dice))
             modifier = 1
@@ -62,22 +64,23 @@ def interp(diceList):
                 
                 if "+" in i: 
                     die = i.split("+")
-                    print("positive modifer, die = {}".format(die))
+                    # print("positive modifer, die = {}".format(die))
                 
                 elif "-" in i:
                     die = i.split("-")
                     modifier = -1
-                    print("negative modifer, die = {}".format(die))
-                
+                    # print("negative modifer, die = {}".format(die))
+               
                 else:
                     die.append(i)
                     die.append(0)
-                    print("no modifer, die = {}".format(die))
+                    # print("no modifer, die = {}".format(die))
                 
-                print("die: {}".format(die))
-            
+                # print("die: {}".format(die))           
+                    
+                
                 data = die[0].split("d")
-                print("data: {}".format(data))
+                # print("data: {}".format(data))
                 
                 data[0] = int(data[0])
                 dieCount += data[0]
@@ -119,7 +122,7 @@ def interp(diceList):
 #returns the result of the polynomial, plus or minus the modifier
 #results cannot go below 0
 def applyModifier(poly, mod):
-    print("poly: {}, modifier: {}".format(poly, mod))
+    # print("poly: {}, modifier: {}".format(poly, mod))
     
     if mod > 0:
         poly *= Polynomial.basis(mod)    
@@ -133,23 +136,22 @@ def applyModifier(poly, mod):
                 result += Polynomial.basis(i + mod) * poly.coef[i]
         poly = result    
    
-    return(poly)
-   
-    
-   
+    return poly  
 
-    
 
 #multiplies polynomials from a list
 #returns a single polynomial, representing their combined possible rolls
 def getPool(diceList):
-    dice = interp(diceList)    
-    pool = 1
-    
-    for die in dice:       
-        pool = die * pool
-    
-    return pool
+    if type(diceList) == numpy.polynomial.polynomial.Polynomial:
+        return diceList
+    else:
+        dice = interp(diceList)    
+        pool = 1
+        
+        for die in dice:       
+            pool = die * pool
+        
+        return pool
 
 
 #gives the odds of a given dice pool in rolling equal or high that a target number
@@ -244,7 +246,10 @@ def oddsPlot(diceList, target):
     ax.axvline(target, color="red")
     ax.bar(x, y)
     
-    plt.show()   
+    plt.show() 
+    
+    #printOdds(diceList, target)
+
 
 #accepts a dice list and target number
 #ought to output a graph of x vs chance to score at least x, and a line to mark the target
@@ -256,7 +261,7 @@ def oddsPlot2(diceList, target):
     percents = []
     
     for i in range(0, len(pool)):
-        values.append(0)
+        values.append(i)
         
         for j in range(0, len(pool)):
             total += pool.coef[j]
@@ -286,8 +291,7 @@ def expect(diceList):
     for i in range (0, len(pool)):
         results += pool.coef[i]
         score += pool.coef[i] * i
-        
-    
+            
     return score/results      
 
     
@@ -343,3 +347,18 @@ def barGraph(diceList):
 
     ax.bar(x, y)
     plt.show()
+    
+#accepts two lists of dice  
+#returns a polynomial for rolling both dice pools and taking the higher result  
+def advantage(firstDice, secondDice):
+    firstPool = getPool(firstDice)
+    
+    secondPool = getPool(secondDice)
+   
+    poly = 0
+    
+    for i in range(0, len(firstPool)):
+        for j in range(0, len(secondPool)):
+            poly += firstPool.coef[i] * secondPool.coef[j] * Polynomial.basis(np.maximum(i,j))
+                 
+    return poly   
